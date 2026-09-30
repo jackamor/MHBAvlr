@@ -10,6 +10,9 @@ const TYPE_LABELS: Record<string, string> = {
   REGIONAL: "Regional (Groups + Playoffs)",
 };
 
+// DB isn't available at build time; render this on every request instead.
+export const dynamic = "force-dynamic";
+
 export default async function TournamentsPage() {
   const tournaments = await prisma.tournament.findMany({
     orderBy: { createdAt: "desc" },

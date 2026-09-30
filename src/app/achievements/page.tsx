@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import AchievementsManager from "@/components/AchievementsManager";
 
+// DB isn't available at build time; render this on every request instead.
+export const dynamic = "force-dynamic";
+
 export default async function AchievementsPage() {
   const [seasons, tournaments, teams] = await Promise.all([
     prisma.season.findMany({

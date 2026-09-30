@@ -5,6 +5,9 @@ import MatchCard from "@/components/MatchCard";
 import TeamCard from "@/components/TeamCard";
 import HeadToHeadCompare from "@/components/HeadToHeadCompare";
 
+// DB isn't available at build time; render this on every request instead.
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   const [upcoming, live, recent, topTeams, allTeams] = await Promise.all([
     prisma.match.findMany({

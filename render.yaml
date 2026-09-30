@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: vlr-clone
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: DATABASE_URL
+        value: file:/app/public/uploads/db/dev.db
+      - key: NODE_ENV
+        value: production
+    disk:
+      name: vlr-data
+      mountPath: /app/public/uploads
+      sizeGB: 1

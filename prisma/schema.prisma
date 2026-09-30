@@ -1,0 +1,198 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Region {
+  CHINA
+  EUROPE
+  AMERICAS
+  APAC
+}
+
+enum TournamentType {
+  SINGLE_ELIMINATION
+  DOUBLE_ELIMINATION
+  TRIPLE_ELIMINATION
+  ROUND_ROBIN
+  REGIONAL
+}
+
+enum PlayoffFormat {
+  SINGLE_ELIMINATION
+  DOUBLE_ELIMINATION
+  TRIPLE_ELIMINATION
+}
+
+enum TournamentStatus {
+  UPCOMING
+  ONGOING
+  COMPLETED
+}
+
+enum MatchStatus {
+  SCHEDULED
+  LIVE
+  COMPLETED
+}
+
+enum BracketSection {
+  GROUP
+  UPPER
+  MIDDLE
+  LOWER
+  PLAYOFF
+  GRAND_FINAL
+}
+
+model Team {
+  id          String   @id @default(cuid())
+  name        String
+  tag         String
+  logoUrl     String?
+  region      Region
+  elo         Int      @default(1000)
+  createdAt   DateTime @default(now())
+
+  pointEntries  PointEntry[]
+  championships Championship[]
+  tournamentTeams TournamentTeam[]
+  matchesAsA    Match[] @relation("MatchTeamA")
+  matchesAsB    Match[] @relation("MatchTeamB")
+  matchesWon    Match[] @relation("MatchWinner")
+  seasonEventChampion SeasonEvent[]
+}
+
+enum ChampionshipTitle {
+  WORLDS
+  MSI
+  MHBA
+  APAC_CHAMPION
+  AMERICAS_CHAMPION
+  CHINA_CHAMPION
+  EUROPE_CHAMPION
+  POINTS_CHAMPION
+}
+
+model Championship {
+  id        String            @id @default(cuid())
+  teamId    String
+  title     ChampionshipTitle
+  year      Int?
+  createdAt DateTime          @default(now())
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+}
+
+model Tournament {
+  id          String            @id @default(cuid())
+  name        String
+  logoUrl     String?
+  type        TournamentType
+  region      Region?
+  status      TournamentStatus  @default(UPCOMING)
+  bestOf      Int               @default(1)
+  groupRounds Int?
+  advanceCount Int?
+  playoffBestOf Int?
+  advantageCount Int?
+  playoffFormat PlayoffFormat?
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime          @default(now())
+
+  teams   TournamentTeam[]
+  matches Match[]
+  pointEntries PointEntry[]
+  seasonEvents SeasonEvent[]
+}
+
+model TournamentTeam {
+  id           String     @id @default(cuid())
+  tournamentId String
+  teamId       String
+  groupName    String?
+  seed         Int?
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  team       Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, teamId])
+}
+
+model Match {
+  id            String         @id @default(cuid())
+  tournamentId  String
+  section       BracketSection
+  roundName     String
+  matchIndex    Int
+  bestOf        Int            @default(1)
+  groupName     String?
+
+  teamAId       String?
+  teamBId       String?
+  teamAScore    Int            @default(0)
+  teamBScore    Int            @default(0)
+  teamAAdvantage Int           @default(0)
+  teamBAdvantage Int           @default(0)
+  winnerId      String?
+  status        MatchStatus    @default(SCHEDULED)
+  scheduledAt   DateTime?
+  updatedAt     DateTime       @default(now()) @updatedAt
+
+  nextMatchId       String?
+  nextMatchSlot     Int?
+  nextLoserMatchId  String?
+  nextLoserMatchSlot Int?
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  teamA      Team?      @relation("MatchTeamA", fields: [teamAId], references: [id], onDelete: SetNull)
+  teamB      Team?      @relation("MatchTeamB", fields: [teamBId], references: [id], onDelete: SetNull)
+  winner     Team?      @relation("MatchWinner", fields: [winnerId], references: [id], onDelete: SetNull)
+}
+
+enum SeasonEventTitle {
+  WORLDS
+  MSI
+  MASTERS
+  MHBA
+}
+
+model Season {
+  id        String   @id @default(cuid())
+  label     String
+  createdAt DateTime @default(now())
+
+  events SeasonEvent[]
+}
+
+model SeasonEvent {
+  id            String           @id @default(cuid())
+  seasonId      String
+  title         SeasonEventTitle
+  tournamentId  String?
+  championTeamId String?
+
+  season      Season      @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  tournament  Tournament? @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+  championTeam Team?      @relation(fields: [championTeamId], references: [id], onDelete: SetNull)
+
+  @@unique([seasonId, title])
+}
+
+model PointEntry {
+  id           String     @id @default(cuid())
+  teamId       String
+  tournamentId String?
+  points       Int
+  placement    String
+  note         String?
+  createdAt    DateTime   @default(now())
+
+  team       Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  tournament Tournament? @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+}
